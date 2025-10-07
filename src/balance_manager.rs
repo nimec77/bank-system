@@ -31,9 +31,15 @@ mod tests {
     fn test_get_balance() {
         let mut storage = Storage::new();
         UserManager::add_user(&mut storage, "Alice".to_string());
-        
-        assert_eq!(BalanceManager::get_balance(&storage, &"Alice".to_string()), Some(0));
-        assert_eq!(BalanceManager::get_balance(&storage, &"Nobody".to_string()), None);
+
+        assert_eq!(
+            BalanceManager::get_balance(&storage, &"Alice".to_string()),
+            Some(0)
+        );
+        assert_eq!(
+            BalanceManager::get_balance(&storage, &"Nobody".to_string()),
+            None
+        );
     }
 
     #[test]
@@ -43,15 +49,24 @@ mod tests {
 
         // Пополнение
         assert!(BalanceManager::deposit(&mut storage, &"Charlie".to_string(), 200).is_ok());
-        assert_eq!(BalanceManager::get_balance(&storage, &"Charlie".to_string()), Some(200));
+        assert_eq!(
+            BalanceManager::get_balance(&storage, &"Charlie".to_string()),
+            Some(200)
+        );
 
         // Успешное снятие
         assert!(BalanceManager::withdraw(&mut storage, &"Charlie".to_string(), 150).is_ok());
-        assert_eq!(BalanceManager::get_balance(&storage, &"Charlie".to_string()), Some(50));
+        assert_eq!(
+            BalanceManager::get_balance(&storage, &"Charlie".to_string()),
+            Some(50)
+        );
 
         // Ошибка: недостаточно средств
         assert!(BalanceManager::withdraw(&mut storage, &"Charlie".to_string(), 100).is_err());
-        assert_eq!(BalanceManager::get_balance(&storage, &"Charlie".to_string()), Some(50));
+        assert_eq!(
+            BalanceManager::get_balance(&storage, &"Charlie".to_string()),
+            Some(50)
+        );
     }
 
     #[test]
@@ -65,7 +80,9 @@ mod tests {
         assert!(BalanceManager::withdraw(&mut storage, &"Dana".to_string(), 50).is_err());
 
         // Баланс у несуществующего пользователя
-        assert_eq!(BalanceManager::get_balance(&storage, &"Dana".to_string()), None);
+        assert_eq!(
+            BalanceManager::get_balance(&storage, &"Dana".to_string()),
+            None
+        );
     }
 }
-

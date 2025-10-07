@@ -23,17 +23,28 @@ mod tests {
     #[test]
     fn test_add_user() {
         let mut storage = Storage::new();
-        assert_eq!(UserManager::add_user(&mut storage, "Alice".to_string()), Some(0));
-        assert_eq!(UserManager::add_user(&mut storage, "Alice".to_string()), None);
+        assert_eq!(
+            UserManager::add_user(&mut storage, "Alice".to_string()),
+            Some(0)
+        );
+        assert_eq!(
+            UserManager::add_user(&mut storage, "Alice".to_string()),
+            None
+        );
     }
 
     #[test]
     fn test_remove_user() {
         let mut storage = Storage::new();
         UserManager::add_user(&mut storage, "Bob".to_string());
-        
-        assert_eq!(UserManager::remove_user(&mut storage, &"Bob".to_string()), Some(0));
-        assert_eq!(UserManager::remove_user(&mut storage, &"Bob".to_string()), None);
+
+        assert_eq!(
+            UserManager::remove_user(&mut storage, &"Bob".to_string()),
+            Some(0)
+        );
+        assert_eq!(
+            UserManager::remove_user(&mut storage, &"Bob".to_string()),
+            None
+        );
     }
 }
-

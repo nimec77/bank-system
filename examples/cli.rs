@@ -1,20 +1,20 @@
-use bank_system::balance_manager::BalanceManager;
-use bank_system::storage::{Name, Storage};
-use bank_system::user_manager::UserManager;
 use std::env;
 
+use bank_system::{
+    balance_manager::BalanceManager,
+    storage::{Name, Storage},
+};
+
 fn main() {
-    let mut storage = Storage::new();
+    // Загружаем текущее состояние банка из CSV-файла
+    // Здесь демонстрация использования BufRead в методе load_data()
+    // Файл читается построчно, и каждая строка преобразуется в (Name, Balance)
+    let mut storage = Storage::load_data("balance.csv");
 
-    // заранее добавим пачку пользователей
-    let users = ["John", "Alice", "Bob", "Vasya"];
-    for u in users.iter() {
-        UserManager::add_user(&mut storage, u.to_string());
-    }
-
-    // собираем аргументы
+    // Получаем аргументы командной строки
     let args: Vec<String> = env::args().collect();
 
+    // Если аргументов недостаточно, показываем справку
     if args.len() < 2 {
         eprintln!("Использование:");
         eprintln!("  deposit <name> <amount>");
@@ -23,16 +23,24 @@ fn main() {
         return;
     }
 
+    // Разбор команды
     match args[1].as_str() {
         "deposit" => {
+            // Проверяем, что указан пользователь и сумма
             if args.len() != 4 {
-                eprintln!("Пример: deposit John 200");
+                eprintln!("Пример: add John 200");
                 return;
             }
             let name: Name = args[2].clone();
             let amount: i64 = args[3].parse().expect("Сумма должна быть числом");
+
+            // Пытаемся пополнить баланс
             match BalanceManager::deposit(&mut storage, &name, amount) {
-                Ok(_) => println!("Пополнено: {} на {}", name, amount),
+                Ok(_) => {
+                    println!("Пополнено: {} на {}", name, amount);
+                    // После изменения баланса сохраняем новое состояние в CSV
+                    storage.save("balance.csv");
+                }
                 Err(e) => println!("Ошибка: {}", e),
             }
         }
@@ -43,8 +51,14 @@ fn main() {
             }
             let name: Name = args[2].clone();
             let amount: i64 = args[3].parse().expect("Сумма должна быть числом");
+
+            // Пытаемся снять деньги
             match BalanceManager::withdraw(&mut storage, &name, amount) {
-                Ok(_) => println!("Снято: {} на {}", name, amount),
+                Ok(_) => {
+                    println!("Снято: {} на {}", name, amount);
+                    // Сохраняем изменения
+                    storage.save("balance.csv");
+                }
                 Err(e) => println!("Ошибка: {}", e),
             }
         }
@@ -54,6 +68,8 @@ fn main() {
                 return;
             }
             let name: Name = args[2].clone();
+
+            // Показываем текущий баланс
             match BalanceManager::get_balance(&storage, &name) {
                 Some(b) => println!("Баланс {}: {}", name, b),
                 None => println!("Пользователь {} не найден", name),

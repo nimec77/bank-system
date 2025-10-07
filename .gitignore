@@ -4,3 +4,6 @@
 .vscode
 .idea
 .cursor
+
+# csv files
+*.csv
