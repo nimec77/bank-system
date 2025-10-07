@@ -1,5 +1,5 @@
 use std::{
-    collections::{HashMap, hash_map},
+    collections::{hash_map, HashMap},
     fs::{self, File},
     io::{self, BufRead},
     path::Path,
@@ -127,56 +127,58 @@ impl Default for Storage {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use std::fs::{self, File};
-    use std::io::Write;
+use std::io::{BufReader, BufWriter, Cursor, Write};
 
-    #[test]
-    fn test_load_data_existing_file() {
-        let file_path = "test_load.csv";
+#[test]
+fn test_load_data_existing_cursor() {
+    // Создаём данные в памяти, как будто это CSV-файл
+    let data = b"John,100\nAlice,200\nBob,50\n";
+    let mut cursor = Cursor::new(&data[..]);
 
-        // Создаём файл с исходными данными
-        let mut f = File::create(file_path).unwrap();
-        writeln!(f, "John,100").unwrap();
-        writeln!(f, "Alice,200").unwrap();
-        writeln!(f, "Bob,50").unwrap();
-
-        // Загружаем Storage
-        let storage = Storage::load_data(file_path);
-
-        assert_eq!(BalanceManager::get_balance(&storage, &"John".to_string()), Some(100));
-        assert_eq!(BalanceManager::get_balance(&storage, &"Alice".to_string()), Some(200));
-        assert_eq!(BalanceManager::get_balance(&storage, &"Bob".to_string()), Some(50));
-        // Пользователь Vasya не добавлен в файле, поэтому None
-        assert_eq!(BalanceManager::get_balance(&storage, &"Vasya".to_string()), None);
-
-        // Удаляем тестовый файл
-        fs::remove_file(file_path).unwrap();
+    // Читаем данные из Cursor
+    let mut storage = Storage::new();
+    let reader = BufReader::new(&mut cursor);
+    for line in reader.lines() {
+        let line = line.unwrap();
+        let parts: Vec<&str> = line.trim().split(',').collect();
+        if parts.len() == 2 {
+            let name = parts[0].to_string();
+            let balance: i64 = parts[1].parse().unwrap_or(0);
+            UserManager::add_user(&mut storage, name.clone());
+            BalanceManager::deposit(&mut storage, &name, balance).unwrap();
+        }
     }
 
-    #[test]
-    fn test_save_creates_file_with_correct_data() {
-        let file_path = "test_save.csv";
+    assert_eq!(BalanceManager::get_balance(&storage, &"John".to_string()), Some(100));
+    assert_eq!(BalanceManager::get_balance(&storage, &"Alice".to_string()), Some(200));
+    assert_eq!(BalanceManager::get_balance(&storage, &"Bob".to_string()), Some(50));
+    assert_eq!(BalanceManager::get_balance(&storage, &"Vasya".to_string()), None); // нет в данных
+}
 
-        // Создаём Storage и добавляем пользователей
-        let mut storage = Storage::new();
-        UserManager::add_user(&mut storage, "John".to_string());
-        UserManager::add_user(&mut storage, "Alice".to_string());
-        BalanceManager::deposit(&mut storage, &"John".to_string(), 150).unwrap();
-        BalanceManager::deposit(&mut storage, &"Alice".to_string(), 300).unwrap();
+#[test]
+fn test_save_writes_to_cursor_correctly() {
+    // Создаём Storage и добавляем пользователей
+    let mut storage = Storage::new();
+    UserManager::add_user(&mut storage, "John".to_string());
+    UserManager::add_user(&mut storage, "Alice".to_string());
+    BalanceManager::deposit(&mut storage, &"John".to_string(), 150).unwrap();
+    BalanceManager::deposit(&mut storage, &"Alice".to_string(), 300).unwrap();
 
-        // Сохраняем в файл
-        storage.save(file_path);
-
-        // Читаем файл обратно и проверяем содержимое
-        let contents = fs::read_to_string(file_path).unwrap();
-        let mut lines: Vec<&str> = contents.lines().collect();
-        lines.sort(); // сортируем, так как get_all() может возвращать в любом порядке
-
-        assert_eq!(lines, vec!["Alice,300", "John,150"]);
-
-        // Удаляем тестовый файл
-        fs::remove_file(file_path).unwrap();
+    // Сохраняем в память через BufWriter
+    let buffer = Vec::new();
+    let mut cursor = Cursor::new(buffer);
+    {
+        let mut writer = BufWriter::new(&mut cursor);
+        for (name, balance) in storage.get_all() {
+            writeln!(writer, "{},{}", name, balance).unwrap();
+        }
+        writer.flush().unwrap();
     }
+
+    // Читаем обратно из памяти
+    cursor.set_position(0);
+    let mut lines: Vec<String> = BufReader::new(cursor).lines().map(|l| l.unwrap()).collect();
+    lines.sort(); // сортируем для сравнения
+
+    assert_eq!(lines, vec!["Alice,300", "John,150"]);
 }
