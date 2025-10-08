@@ -3,6 +3,7 @@ use std::io::{self, BufRead, Write};
 use bank_system::{
     balance_manager::BalanceManager,
     storage::{Name, Storage},
+    transaction::{Deposit, Transaction},
     user_manager::UserManager,
 };
 
@@ -83,12 +84,18 @@ fn main() {
                         continue;
                     }
                 };
-                match BalanceManager::deposit(&mut storage, &name, amount) {
+
+                let tx = Deposit {
+                    account: name.clone(),
+                    amount,
+                };
+                // Применяем транзакцию
+                match tx.apply(&mut storage) {
                     Ok(_) => {
-                        println!("Баланс пользователя {} увеличен на {}", name, amount);
+                        println!("Транзакция: депозит {} на {}", name, amount);
                         storage.save("balance.csv");
                     }
-                    Err(e) => println!("Ошибка: {}", e),
+                    Err(e) => println!("Ошибка транзакции: {:?}", e),
                 }
             }
             "withdraw" => {

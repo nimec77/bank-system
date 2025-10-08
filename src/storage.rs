@@ -1,5 +1,5 @@
 use std::{
-    collections::{hash_map, HashMap},
+    collections::{HashMap, hash_map},
     fs::{self, File},
     io::{self, BufRead},
     path::Path,
@@ -11,7 +11,7 @@ pub type Name = String;
 type Balance = i64;
 
 pub struct Storage {
-    accounts: HashMap<Name, Balance>,
+    pub(crate) accounts: HashMap<Name, Balance>,
 }
 
 impl Storage {
@@ -149,10 +149,22 @@ fn test_load_data_existing_cursor() {
         }
     }
 
-    assert_eq!(BalanceManager::get_balance(&storage, &"John".to_string()), Some(100));
-    assert_eq!(BalanceManager::get_balance(&storage, &"Alice".to_string()), Some(200));
-    assert_eq!(BalanceManager::get_balance(&storage, &"Bob".to_string()), Some(50));
-    assert_eq!(BalanceManager::get_balance(&storage, &"Vasya".to_string()), None); // нет в данных
+    assert_eq!(
+        BalanceManager::get_balance(&storage, &"John".to_string()),
+        Some(100)
+    );
+    assert_eq!(
+        BalanceManager::get_balance(&storage, &"Alice".to_string()),
+        Some(200)
+    );
+    assert_eq!(
+        BalanceManager::get_balance(&storage, &"Bob".to_string()),
+        Some(50)
+    );
+    assert_eq!(
+        BalanceManager::get_balance(&storage, &"Vasya".to_string()),
+        None
+    ); // нет в данных
 }
 
 #[test]
