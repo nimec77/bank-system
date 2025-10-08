@@ -62,7 +62,7 @@ impl Storage {
         }
     }
 
-    fn get_all(&self) -> impl Iterator<Item = (Name, i64)> + '_ {
+    pub fn get_all(&self) -> impl Iterator<Item = (Name, i64)> + '_ {
         self.accounts.iter().map(|(n, b)| (n.clone(), *b))
     }
 

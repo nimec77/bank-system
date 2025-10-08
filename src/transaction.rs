@@ -24,9 +24,9 @@ impl Transaction for Deposit {
 }
 
 pub struct Transfer {
-    from: String,
-    to: String,
-    amount: i64,
+    pub from: String,
+    pub to: String,
+    pub amount: i64,
 }
 
 impl Transaction for Transfer {

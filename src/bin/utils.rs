@@ -3,9 +3,11 @@ use std::io::{self, BufRead, Write};
 use bank_system::{
     balance_manager::BalanceManager,
     storage::{Name, Storage},
-    transaction::{Deposit, Transaction},
+    transaction::{Deposit, Transaction, Transfer},
     user_manager::UserManager,
 };
+
+const FILE_NAME: &str = "balance.csv";
 
 fn main() {
     let mut storage = Storage::load_data("balance.csv");
@@ -14,9 +16,11 @@ fn main() {
     println!("Команды:");
     println!("  add <name> <balance>      - добавить пользователя");
     println!("  remove <name>             - удалить пользователя");
+    println!("  list                      - показать всех пользователей");
     println!("  deposit <name> <amount>   - пополнить баланс");
     println!("  withdraw <name> <amount>  - снять со счёта");
     println!("  balance <name>            - показать баланс");
+    println!("  transfer <from> <to> <amount> - перевести деньги");
     println!("  exit                      - выйти");
 
     let stdin = io::stdin();
@@ -53,7 +57,7 @@ fn main() {
                 if UserManager::add_user(&mut storage, name.clone()).is_some() {
                     let _ = BalanceManager::deposit(&mut storage, &name, balance);
                     println!("Пользователь {} добавлен с балансом {}", name, balance);
-                    storage.save("balance.csv");
+                    storage.save(FILE_NAME);
                 } else {
                     println!("Пользователь {} уже существует", name);
                 }
@@ -66,9 +70,18 @@ fn main() {
                 let name = args[1];
                 if UserManager::remove_user(&mut storage, &name.to_string()).is_some() {
                     println!("Пользователь {} удалён", name);
-                    storage.save("balance.csv");
+                    storage.save(FILE_NAME);
                 } else {
                     println!("Пользователь {} не найден", name);
+                }
+            }
+            "list" => {
+                if args.len() != 1 {
+                    println!("Пример: list");
+                    continue;
+                }
+                for (name, balance) in storage.get_all() {
+                    println!("{}: {}", name, balance);
                 }
             }
             "deposit" => {
@@ -93,7 +106,7 @@ fn main() {
                 match tx.apply(&mut storage) {
                     Ok(_) => {
                         println!("Транзакция: депозит {} на {}", name, amount);
-                        storage.save("balance.csv");
+                        storage.save(FILE_NAME);
                     }
                     Err(e) => println!("Ошибка транзакции: {:?}", e),
                 }
@@ -114,7 +127,7 @@ fn main() {
                 match BalanceManager::withdraw(&mut storage, &name, amount) {
                     Ok(_) => {
                         println!("С баланса пользователя {} снято {}", name, amount);
-                        storage.save("balance.csv");
+                        storage.save(FILE_NAME);
                     }
                     Err(e) => println!("Ошибка: {}", e),
                 }
@@ -128,6 +141,34 @@ fn main() {
                 match BalanceManager::get_balance(&storage, &name) {
                     Some(b) => println!("Баланс пользователя {}: {}", name, b),
                     None => println!("Пользователь {} не найден", name),
+                }
+            }
+            "transfer" => {
+                if args.len() != 4 {
+                    println!("Пример: tx_transfer Alice Bob 50");
+                    continue;
+                }
+                let from = args[1].to_string();
+                let to = args[2].to_string();
+                let amount: i64 = match args[3].parse() {
+                    Ok(a) => a,
+                    Err(_) => {
+                        println!("Сумма должна быть числом");
+                        continue;
+                    }
+                };
+
+                let tx = Transfer {
+                    from: from.clone(),
+                    to: to.clone(),
+                    amount,
+                };
+                match tx.apply(&mut storage) {
+                    Ok(_) => {
+                        println!("Транзакция: перевод {} на {}", from, to);
+                        storage.save(FILE_NAME);
+                    }
+                    Err(e) => println!("Ошибка транзакции: {:?}", e),
                 }
             }
             "exit" => break,
